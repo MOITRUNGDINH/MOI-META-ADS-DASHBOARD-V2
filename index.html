@@ -185,7 +185,7 @@ input[type=date]:focus{border-color:var(--blue);}
 
 <div id="loading-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.95);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:9999;font-family:'DM Sans',sans-serif;">
   <div style="border:4px solid #f3f3f3;border-top:4px solid #2D3AE8;border-radius:50%;width:50px;height:50px;animation:spin 1s linear infinite;"></div>
-  <h2 style="margin-top:20px;color:#0D0F1E;font-size:18px;">Đang đồng bộ dữ liệu Meta Ads...</h2>
+  <h2 style="margin-top:20px;color:#0D0F1E;font-size:18px;">Đang đồng bộ dữ liệu Meta Ads (V4)...</h2>
   <p style="color:#676B92;font-size:14px;">Vui lòng đợi trong giây lát</p>
   <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
 </div>
@@ -460,7 +460,7 @@ input[type=date]:focus{border-color:var(--blue);}
 Chart.register(ChartDataLabels);
 // ─── DATA ───────────────────────────────────────────────────────
 
-// ─── CONFIG AUTO-FETCH ──────────────────────────────────────────
+// ─── CONFIG AUTO-FETCH (V4 - FIXED DATA TYPES) ─────────────────
 const DATA_URLS = {
   account: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1A-eREuQRDUVaCEHtNqoHJBvrSkTwVJpACg8OZgVErvx75Cp2PWIry-0NqeYbMpf-5Z-maebSzTc5/pub?gid=0&single=true&output=csv',
   campaigns: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1A-eREuQRDUVaCEHtNqoHJBvrSkTwVJpACg8OZgVErvx75Cp2PWIry-0NqeYbMpf-5Z-maebSzTc5/pub?gid=2030521712&single=true&output=csv',
@@ -479,8 +479,18 @@ async function fetchCSV(url) {
       header: false,
       skipEmptyLines: true,
       complete: (results) => {
-        if(results.data.length > 0) results.data.shift(); // Remove headers
-        resolve(results.data);
+        if(results.data.length > 0) results.data.shift(); // Bỏ headers
+        
+        // V4: Ép kiểu dữ liệu - Chuyển chữ thành số cho các cột số liệu
+        const cleanedData = results.data.map(row => {
+          return row.map(cell => {
+            if (cell === null || cell === undefined || cell === '') return 0;
+            // Nếu là số dưới dạng text (có thể có dấu phẩy hoặc chấm)
+            const num = Number(cell.toString().replace(/,/g, ''));
+            return isNaN(num) ? cell : num;
+          });
+        });
+        resolve(cleanedData);
       },
       error: (err) => reject(err)
     });
@@ -492,7 +502,7 @@ async function initDashboard() {
   if(loading) loading.style.display = 'flex';
   
   try {
-    console.log("Starting data fetch from Google Sheets CSV...");
+    console.log("Starting data fetch (V4)...");
     const results = await Promise.all([
       fetchCSV(DATA_URLS.account),
       fetchCSV(DATA_URLS.campaigns),
@@ -513,7 +523,8 @@ async function initDashboard() {
     bootDashboard(); 
   } catch (err) {
     console.error("Fetch Error:", err);
-    alert("Không thể tải dữ liệu từ Google Sheets. Hãy kiểm tra lại kết nối mạng hoặc link CSV.");
+    // Bỏ qua lỗi và chạy tiếp nếu có thể
+    bootDashboard();
   }
 }
 
