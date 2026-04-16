@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>MOI Meta Ads</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500;600&display=swap');
+:root{
+  --bg:#F4F5FA; --surface:#fff; --border:#E2E5F0; --border2:#C8CCE2;
+  --ink:#0D0F1E; --ink2:#3A3E60; --ink3:#676B92; --ink4:#A8ABCC;
+  --blue:#2D3AE8; --blue-lt:#EAECFD; --blue-dk:#1F29C4;
+  --green:#0A875F; --green-lt:#E4F5EE;
+  --orange:#C96600; --orange-lt:#FEF0DC;
+  --red:#C42626; --red-lt:#FEECEC;
+  --purple:#6B2FD4; --purple-lt:#F0EAFE;
+  --sb-w:200px; --r:8px;
+  --sh:0 1px 2px rgba(0,0,30,.06),0 3px 8px rgba(0,0,30,.04);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{display:flex;min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);overflow-x:hidden;}
+
+/* SIDEBAR */
+.sb{width:var(--sb-w);flex-shrink:0;background:#12152B;position:fixed;top:0;left:0;bottom:0;z-index:200;overflow-y:auto;transition:transform .25s;}
+.sb-head{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:6px;}
+.sb-brand{font-size:14px;font-weight:700;color:#fff;letter-spacing:-.3px;}
+.sb-sub{font-size:10px;color:rgba(255,255,255,.35);margin-top:2px;text-transform:uppercase;letter-spacing:.8px;}
+.sb-sec{font-size:9px;font-weight:700;color:rgba(255,255,255,.28);letter-spacing:1.8px;text-transform:uppercase;padding:12px 16px 4px;}
+.sb-item{display:flex;align-items:center;gap:8px;padding:8px 16px;margin:1px 6px;border-radius:6px;cursor:pointer;color:rgba(255,255,255,.55);font-size:12px;font-weight:500;transition:all .14s;white-space:nowrap;}
+.sb-item:hover{background:rgba(255,255,255,.07);color:#fff;}
+.sb-item.on{background:rgba(255,255,255,.12);color:#fff;font-weight:600;}
+.sb-dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.7;flex-shrink:0;}
+.sb-footer{margin-top:auto;padding:12px 16px;border-top:1px solid rgba(255,255,255,.06);}
+.sb-sync{font-size:10px;color:rgba(255,255,255,.3);font-family:'DM Mono',monospace;line-height:1.6;}
+.sb-toggle{display:none;position:fixed;top:12px;left:12px;z-index:300;background:var(--blue);color:#fff;border:none;border-radius:6px;width:34px;height:34px;font-size:18px;cursor:pointer;align-items:center;justify-content:center;}
+
+/* MAIN */
+.main{margin-left:var(--sb-w);flex:1;min-width:0;display:flex;flex-direction:column;}
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:0 20px;height:50px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.topbar-l{display:flex;align-items:center;gap:10px;min-width:0;}
+.pg-title{font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-.3px;white-space:nowrap;}
+.pg-badge{padding:2px 8px;border-radius:10px;background:var(--blue-lt);color:var(--blue);font-size:10px;font-weight:700;flex-shrink:0;}
+.topbar-r{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+input[type=date]{height:28px;padding:0 8px;border:1px solid var(--border2);border-radius:5px;font-family:'DM Mono',monospace;font-size:11px;color:var(--ink);background:#fff;outline:none;}
+input[type=date]:focus{border-color:var(--blue);}
+.chips{display:flex;gap:2px;}
+.chip{padding:3px 9px;border-radius:12px;border:1px solid var(--border2);background:#fff;font-size:11px;font-weight:500;cursor:pointer;color:var(--ink3);transition:all .12s;}
+.chip:hover,.chip.on{background:var(--blue);color:#fff;border-color:var(--blue);}
+.btn{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:5px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .14s;}
+.btn-p{background:var(--blue);color:#fff;}
+.btn-p:hover{background:var(--blue-dk);}
+.sep{width:1px;height:16px;background:var(--border2);}
+
+/* FUNNEL FILTER BAR */
+.fbar{background:#fff;border-bottom:1px solid var(--border);padding:7px 20px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.fl{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;}
+.ftabs{display:flex;gap:3px;}
+.ftab{padding:3px 10px;border-radius:12px;border:1px solid var(--border2);background:#fff;font-size:11px;font-weight:600;cursor:pointer;transition:all .12s;}
+.ftab:hover{border-color:var(--blue-lt);}
+.ftab.on-all{background:var(--ink);color:#fff;border-color:var(--ink);}
+.ftab.on-bofu{background:var(--green-lt);color:var(--green);border-color:var(--green);}
+.ftab.on-tofu{background:var(--blue-lt);color:var(--blue);border-color:var(--blue);}
+.ftab.on-mofu{background:var(--purple-lt);color:var(--purple);border-color:var(--purple);}
+
+/* PAGE */
+.page{padding:18px 20px 48px;flex:1;}
+.pane{display:none;}.pane.on{display:block;}
+
+/* KPI GRID — fixed height cards to prevent wrapping issues */
+.kg{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:16px;}
+.kc{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;box-shadow:var(--sh);display:flex;flex-direction:column;justify-content:space-between;min-height:82px;}
+.kc-l{font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.7px;line-height:1.3;margin-bottom:6px;}
+.kc-v{font-family:'DM Mono',monospace;font-size:22px;font-weight:600;color:var(--ink);line-height:1;white-space:nowrap;}
+.kc-v.blue{color:var(--blue);}
+.kc-v.green{color:var(--green);}
+.kc-v.orange{color:var(--orange);}
+.kc-v.red{color:var(--red);}
+.kc-sub{font-size:10px;color:var(--ink4);margin-top:4px;}
+
+/* SECTION */
+.sec{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:1.4px;text-transform:uppercase;margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+
+/* CARD */
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:16px;box-shadow:var(--sh);}
+.card-h{margin-bottom:12px;}
+.ct{font-size:12px;font-weight:700;color:var(--ink);}
+.cs{font-size:11px;color:var(--ink3);margin-top:2px;}
+.cw{position:relative;}
+.cw.h200{height:200px;}.cw.h240{height:240px;}.cw.h160{height:160px;}
+
+/* GRIDS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.g21{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;}
+.full{grid-column:1/-1;}
+
+/* FUNNEL */
+.funnel-outer{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:start;margin-bottom:16px;}
+.funnel-vis{display:flex;flex-direction:column;align-items:center;gap:0;min-width:220px;}
+.fb{border-radius:6px;padding:12px 16px;text-align:center;margin:0 auto;}
+.fb-tofu{background:var(--blue-lt);color:var(--blue);width:100%;}
+.fb-mofu{background:var(--purple-lt);color:var(--purple);width:82%;}
+.fb-bofu{background:var(--green-lt);color:var(--green);width:62%;}
+.fb-lbl{font-size:8px;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin-bottom:3px;}
+.fb-val{font-family:'DM Mono',monospace;font-size:18px;font-weight:700;line-height:1;}
+.fb-sub{font-size:10px;margin-top:2px;opacity:.75;}
+.fa{text-align:center;color:var(--ink4);font-size:14px;line-height:1;padding:3px 0;}
+.fmet{display:flex;flex-direction:column;gap:10px;}
+.fmg{border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;background:#fff;}
+.fmg-t{font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.fmg-t.t{color:var(--blue);}
+.fmg-t.m{color:var(--purple);}
+.fmg-t.b{color:var(--green);}
+.fmg-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.fmi{display:flex;flex-direction:column;gap:1px;}
+.fmi-l{font-size:9px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.fmi-v{font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:var(--ink);}
+
+/* TABLE */
+.tcard{background:#fff;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh);margin-bottom:12px;}
+.thead{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+.tt{font-size:12px;font-weight:700;color:var(--ink);}
+.tm{font-size:11px;color:var(--ink3);}
+.srch{padding:4px 10px;border:1px solid var(--border2);border-radius:5px;font-size:11px;outline:none;width:180px;font-family:inherit;}
+.srch:focus{border-color:var(--blue);}
+.tscr{overflow-x:auto;max-height:460px;overflow-y:auto;}
+.dt{width:100%;border-collapse:collapse;font-size:11.5px;}
+.dt thead{position:sticky;top:0;z-index:5;}
+.dt th{padding:7px 12px;text-align:left;font-size:9.5px;font-weight:700;color:var(--ink3);letter-spacing:.7px;text-transform:uppercase;background:var(--bg);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;}
+.dt th:hover{color:var(--ink);}
+.dt th.asc::after{content:' ↑';color:var(--blue);}
+.dt th.desc::after{content:' ↓';color:var(--blue);}
+.dt td{padding:8px 12px;border-bottom:1px solid #F0F2FA;color:var(--ink2);font-family:'DM Mono',monospace;white-space:nowrap;vertical-align:middle;}
+.dt td.txt{font-family:'DM Sans',sans-serif;color:var(--ink);font-weight:500;max-width:200px;overflow:hidden;text-overflow:ellipsis;}
+.dt tr:hover td{background:#F8F9FF;}
+.dt tr:last-child td{border-bottom:none;}
+
+/* Inline bars */
+.ib{display:flex;align-items:center;gap:5px;}
+.ib-bg{height:3px;background:var(--border);border-radius:2px;width:50px;flex-shrink:0;}
+.ib-fill{height:3px;border-radius:2px;}
+
+/* Badges */
+.rb{display:inline-flex;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;}
+.rb.g{background:var(--green-lt);color:var(--green);}
+.rb.w{background:var(--orange-lt);color:var(--orange);}
+.rb.r{background:var(--red-lt);color:var(--red);}
+.rb.n{background:var(--bg);color:var(--ink3);}
+.fb-badge{display:inline-flex;padding:2px 6px;border-radius:8px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;}
+.fb-badge.tofu{background:var(--blue-lt);color:var(--blue);}
+.fb-badge.mofu{background:var(--purple-lt);color:var(--purple);}
+.fb-badge.bofu{background:var(--green-lt);color:var(--green);}
+.fb-badge.other{background:var(--bg);color:var(--ink3);}
+
+/* RESPONSIVE */
+@media(max-width:1100px){
+  .g3{grid-template-columns:1fr 1fr;}
+  .funnel-outer{grid-template-columns:1fr;}.funnel-vis{width:100%;max-width:400px;margin:0 auto;}
+}
+@media(max-width:800px){
+  :root{--sb-w:200px;}
+  .sb{transform:translateX(-100%);}
+  .sb.open{transform:translateX(0);}
+  .sb-toggle{display:flex;}
+  .main{margin-left:0;}
+  .g2,.g21{grid-template-columns:1fr;}
+  .g3{grid-template-columns:1fr;}
+  .topbar-r{display:none;}
+  .kg{grid-template-columns:1fr 1fr;}
+  .fmg-grid{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:480px){
+  .page{padding:12px 12px 40px;}
+  .topbar{padding:0 10px 0 52px;}
+  .fbar{padding:6px 12px;}
+  .kg{grid-template-columns:1fr 1fr;}
+  .kc-v{font-size:18px;}
+}
+</style>
+</head>
+<body>
+
+<div id="loading-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.95);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:9999;font-family:'DM Sans',sans-serif;">
+  <div style="border:4px solid #f3f3f3;border-top:4px solid #2D3AE8;border-radius:50%;width:50px;height:50px;animation:spin 1s linear infinite;"></div>
+  <h2 style="margin-top:20px;color:#0D0F1E;font-size:18px;">Đang đồng bộ dữ liệu Meta Ads...</h2>
+  <p style="color:#676B92;font-size:14px;">Vui lòng đợi trong giây lát</p>
+  <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+</div>
+
+
+<button class="sb-toggle" onclick="toggleSb()" id="sbToggle">☰</button>
+
+<nav class="sb" id="sidebar">
+  <div class="sb-head">
+    <div class="sb-brand">MOI Cosmetics</div>
+    <div class="sb-sub">Meta Ads · 2026</div>
+  </div>
+  <div class="sb-sec">Performance</div>
+  <div class="sb-item on" onclick="nav('overview',this)"><div class="sb-dot"></div>Overview</div>
+  <div class="sb-item" onclick="nav('awareness',this)"><div class="sb-dot"></div>Awareness</div>
+  <div class="sb-sec">Creative & Campaigns</div>
+  <div class="sb-item" onclick="nav('creatives',this)"><div class="sb-dot"></div>Ad Creatives</div>
+  <div class="sb-item" onclick="nav('campaigns',this)"><div class="sb-dot"></div>Campaigns</div>
+  <div class="sb-item" onclick="nav('adsets',this)"><div class="sb-dot"></div>Ad Sets</div>
+  <div class="sb-sec">Audience</div>
+  <div class="sb-item" onclick="nav('audience',this)"><div class="sb-dot"></div>Audience Insights</div>
+  <div class="sb-footer">
+    <div class="sb-sync" id="sbSync">Loading...</div>
+  </div>
+</nav>
+
+<div class="main">
+<div class="topbar">
+  <div class="topbar-l">
+    <div class="pg-title" id="pgTitle">Overview</div>
+    <div class="pg-badge" id="pgBadge">All</div>
+  </div>
+  <div class="topbar-r">
+    <input type="date" id="dtFrom">
+    <span style="color:var(--ink4);font-size:11px">→</span>
+    <input type="date" id="dtTo">
+    <button class="btn btn-p" onclick="applyFilter()">Apply</button>
+    <div class="sep"></div>
+    <div class="chips">
+      <div class="chip" onclick="setP(this,7)">7D</div>
+      <div class="chip" onclick="setP(this,14)">14D</div>
+      <div class="chip on" onclick="setP(this,30)">30D</div>
+      <div class="chip" onclick="setP(this,90)">90D</div>
+      <div class="chip" onclick="setP(this,'ytd')">YTD</div>
+    </div>
+  </div>
+</div>
+
+<!-- FUNNEL FILTER (shown on Campaigns, Ad Sets, Creatives) -->
+<div class="fbar" id="fbar" style="display:none">
+  <span class="fl">Funnel</span>
+  <div class="ftabs">
+    <div class="ftab on-all" onclick="setFunnel('all',this)">All</div>
+    <div class="ftab" onclick="setFunnel('bofu',this)">BOFU</div>
+    <div class="ftab" onclick="setFunnel('tofu',this)">TOFU</div>
+    <div class="ftab" onclick="setFunnel('mofu',this)">MOFU</div>
+  </div>
+  <div class="sep"></div>
+  <span class="fl">Status</span>
+  <div class="ftabs" id="stTabs">
+    <div class="ftab on-all" onclick="setStatus('all',this)">All</div>
+    <div class="ftab" onclick="setStatus('active',this)" style="color:#0A875F">Active</div>
+    <div class="ftab" onclick="setStatus('paused',this)" style="color:#C96600">Paused</div>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- ═══ OVERVIEW ═══ -->
+<div id="pane-overview" class="pane on">
+  <div class="kg" id="ovKg"></div>
+  <div class="sec">Full Funnel — TOFU → MOFU → BOFU</div>
+  <div class="funnel-outer" id="funnelOuter"></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-h"><div class="ct">Budget allocation by funnel tier</div><div class="cs">% Amount spent per tier</div></div>
+      <div class="cw h200"><canvas id="c-pie"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><div class="ct">AD Revenue vs Amount spent — Daily</div><div class="cs">BOFU campaigns only · M₫</div></div>
+      <div class="cw h200"><canvas id="c-revsp"></canvas></div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-h"><div class="ct">Purchase ROAS (return on ad spend) — Daily</div><div class="cs">BOFU only · green ≥3x orange 2–3x red &lt;2x</div></div>
+      <div class="cw h200"><canvas id="c-roas"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><div class="ct">CPM & CTR (all) — Daily</div><div class="cs">All campaigns</div></div>
+      <div class="cw h200"><canvas id="c-cpmctr"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ AWARENESS ═══ -->
+<div id="pane-awareness" class="pane">
+  <div class="kg" id="awKg"></div>
+  <div class="sec">TOFU — Reach & Awareness</div>
+  <div class="g2">
+    <div class="card"><div class="card-h"><div class="ct">Impressions & Reach (TOFU)</div></div><div class="cw h200"><canvas id="c-aw1"></canvas></div></div>
+    <div class="card"><div class="card-h"><div class="ct">CPM & ThruPlays (TOFU)</div></div><div class="cw h200"><canvas id="c-aw2"></canvas></div></div>
+  </div>
+  <div class="sec">MOFU — Consideration & Engagement</div>
+  <div class="g2">
+    <div class="card"><div class="card-h"><div class="ct">Link clicks & MCS (MOFU)</div></div><div class="cw h200"><canvas id="c-mo1"></canvas></div></div>
+    <div class="card"><div class="card-h"><div class="ct">Post engagement & CTR (all) (MOFU)</div></div><div class="cw h200"><canvas id="c-mo2"></canvas></div></div>
+  </div>
+</div>
+
+<!-- ═══ AD CREATIVES ═══ -->
+<div id="pane-creatives" class="pane">
+  <div class="kg" id="crKg"></div>
+  <div class="g21">
+    <div class="card full">
+      <div class="card-h"><div class="ct">AD Revenue by Ad (Top 20 · last 60 days · BOFU)</div><div class="cs">Sorted by AD Revenue</div></div>
+      <div class="cw h240"><canvas id="c-cr-rev"></canvas></div>
+    </div>
+  </div>
+  <div class="tcard">
+    <div class="thead">
+      <span class="tt">Ad Creative Performance — Last 60 days</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input class="srch" placeholder="Search ad name..." oninput="srchT('crTb',0,this.value)">
+        <span class="tm" id="crMeta"></span>
+      </div>
+    </div>
+    <div class="tscr"><table class="dt" id="crTb">
+      <thead><tr>
+        <th onclick="srt('crTb',0)">Ad Name</th>
+        <th onclick="srt('crTb',1)">Campaign</th>
+        <th onclick="srt('crTb',2)">Status</th>
+        <th onclick="srt('crTb',3)">Amount spent</th>
+        <th onclick="srt('crTb',4)">AD Revenue</th>
+        <th onclick="srt('crTb',5)">Purchase ROAS</th>
+        <th onclick="srt('crTb',6)">Purchases</th>
+        <th onclick="srt('crTb',7)">CPA</th>
+        <th onclick="srt('crTb',8)">AOV</th>
+        <th onclick="srt('crTb',9)">Impressions</th>
+        <th onclick="srt('crTb',10)">CTR (all)</th>
+        <th onclick="srt('crTb',11)">CPM</th>
+        <th onclick="srt('crTb',12)">ThruPlays</th>
+        <th onclick="srt('crTb',13)">Post engagement</th>
+      </tr></thead>
+      <tbody id="crTbBody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ═══ CAMPAIGNS ═══ -->
+<div id="pane-campaigns" class="pane">
+  <div class="kg" id="campKg"></div>
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-h"><div class="ct">Purchase ROAS (return on ad spend) by Campaign</div><div class="cs">BOFU only · green ≥3x orange 2–3x red &lt;2x</div></div>
+    <div class="cw h240"><canvas id="c-croas"></canvas></div>
+  </div>
+  <div class="tcard">
+    <div class="thead">
+      <span class="tt">Campaign Performance</span>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input class="srch" placeholder="Search..." oninput="srchT('campTb',0,this.value)">
+        <span class="tm" id="campMeta"></span>
+      </div>
+    </div>
+    <div class="tscr"><table class="dt" id="campTb">
+      <thead><tr>
+        <th onclick="srt('campTb',0)">Campaign</th>
+        <th onclick="srt('campTb',1)">Status</th>
+        <th onclick="srt('campTb',2)">Tier</th>
+        <th onclick="srt('campTb',3)">Amount spent</th>
+        <th onclick="srt('campTb',4)">Impr</th>
+        <th onclick="srt('campTb',5)">Reach</th>
+        <th onclick="srt('campTb',6)">CTR (all)</th>
+        <th onclick="srt('campTb',7)">Post eng.</th>
+        <th onclick="srt('campTb',8)">ThruPlays</th>
+        <th onclick="srt('campTb',9)">MCS</th>
+        <th onclick="srt('campTb',10)">ROAS</th>
+        <th onclick="srt('campTb',11)">AD Revenue</th>
+        <th onclick="srt('campTb',12)">Purchases</th>
+        <th onclick="srt('campTb',13)">CPA</th>
+        <th onclick="srt('campTb',14)">AOV</th>
+        <th onclick="srt('campTb',15)">CPM</th>
+        <th onclick="srt('campTb',16)">% Budget</th>
+      </tr></thead>
+      <tbody id="campTbBody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ═══ AD SETS ═══ -->
+<div id="pane-adsets" class="pane">
+  <div class="tcard">
+    <div class="thead">
+      <span class="tt">Ad Set Performance</span>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input class="srch" placeholder="Search..." oninput="srchT('adsetTb',1,this.value)">
+        <span class="tm" id="adsetMeta"></span>
+      </div>
+    </div>
+    <div class="tscr"><table class="dt" id="adsetTb">
+      <thead><tr>
+        <th onclick="srt('adsetTb',0)">Campaign</th>
+        <th onclick="srt('adsetTb',1)">Ad Set</th>
+        <th onclick="srt('adsetTb',2)">Status</th>
+        <th onclick="srt('adsetTb',3)">Amount spent</th>
+        <th onclick="srt('adsetTb',4)">Impr</th>
+        <th onclick="srt('adsetTb',5)">CTR (all)</th>
+        <th onclick="srt('adsetTb',6)">Post eng.</th>
+        <th onclick="srt('adsetTb',7)">ThruPlays</th>
+        <th onclick="srt('adsetTb',8)">ROAS</th>
+        <th onclick="srt('adsetTb',9)">AD Revenue</th>
+        <th onclick="srt('adsetTb',10)">Purchases</th>
+        <th onclick="srt('adsetTb',11)">CPA</th>
+        <th onclick="srt('adsetTb',12)">CPM</th>
+      </tr></thead>
+      <tbody id="adsetTbBody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ═══ AUDIENCE ═══ -->
+<div id="pane-audience" class="pane">
+  <div class="kg" id="audKg"></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-h"><div class="ct">Impressions by Age</div><div class="cs">All campaigns</div></div>
+      <div class="cw h160"><canvas id="c-age-impr"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><div class="ct">AD Revenue by Age</div><div class="cs">BOFU only</div></div>
+      <div class="cw h160"><canvas id="c-age-rev"></canvas></div>
+    </div>
+
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-h"><div class="ct">CTR (all) by Age × Gender</div></div>
+      <div class="cw h200"><canvas id="c-age-ctr"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><div class="ct">AD Revenue by Gender (BOFU)</div></div>
+      <div class="cw h200"><canvas id="c-gen-rev"></canvas></div>
+    </div>
+  </div>
+  <div class="tcard">
+    <div class="thead"><span class="tt">Demographic Breakdown — Age × Gender</span><span class="tm" id="audMeta"></span></div>
+    <div class="tscr"><table class="dt" id="audTb">
+      <thead><tr>
+        <th onclick="srt('audTb',0)">Age</th>
+        <th onclick="srt('audTb',1)">Gender</th>
+        <th onclick="srt('audTb',2)">Amount spent</th>
+        <th onclick="srt('audTb',3)">Impressions</th>
+        <th onclick="srt('audTb',4)">Link clicks</th>
+        <th onclick="srt('audTb',5)">CTR (all)</th>
+        <th onclick="srt('audTb',6)">CTR (link)</th>
+        <th onclick="srt('audTb',7)">Post eng.</th>
+        <th onclick="srt('audTb',8)">ROAS</th>
+        <th onclick="srt('audTb',9)">AD Revenue</th>
+        <th onclick="srt('audTb',10)">Purchases</th>
+        <th onclick="srt('audTb',11)">CPA</th>
+        <th onclick="srt('audTb',12)">CPM</th>
+      </tr></thead>
+      <tbody id="audTbBody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+</div><!-- /page -->
+</div><!-- /main -->
+
+<script>
+Chart.register(ChartDataLabels);
+// ─── DATA ───────────────────────────────────────────────────────
+
+// ─── CONFIG AUTO-FETCH ──────────────────────────────────────────
+const DATA_URLS = {
+  account: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1A-eREuQRDUVaCEHtNqoHJBvrSkTwVJpACg8OZgVErvx75Cp2PWIry-0NqeYbMpf-5Z-maebSzTc5/pub?gid=0&single=true&output=csv',
+  campaigns: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1A-eREuQRDUVaCEHtNqoHJBvrSkTwVJpACg8OZgVErvx75Cp2PWIry-0NqeYbMpf-5Z-maebSzTc5/pub?gid=2030521712&single=true&output=csv',
+  adsets: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1A-eREuQRDUVaCEHtNqoHJBvrSkTwVJpACg8OZgVErvx75Cp2PWIry-0NqeYbMpf-5Z-maebSzTc5/pub?gid=360497181&single=true&output=csv',
+  ads: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1A-eREuQRDUVaCEHtNqoHJBvrSkTwVJpACg8OZgVErvx75Cp2PWIry-0NqeYbMpf-5Z-maebSzTc5/pub?gid=1234705856&single=true&output=csv',
+  status: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1A-eREuQRDUVaCEHtNqoHJBvrSkTwVJpACg8OZgVErvx75Cp2PWIry-0NqeYbMpf-5Z-maebSzTc5/pub?gid=847510329&single=true&output=csv',
+  breakdown: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS1A-eREuQRDUVaCEHtNqoHJBvrSkTwVJpACg8OZgVErvx75Cp2PWIry-0NqeYbMpf-5Z-maebSzTc5/pub?gid=587508179&single=true&output=csv'
+};
+
+let RAW_DATA = { account: [], campaigns: [], adsets: [], ads: [], status: [], breakdown: [] };
+
+async function fetchCSV(url) {
+  return new Promise((resolve, reject) => {
+    Papa.parse(url, {
+      download: true,
+      header: false,
+      skipEmptyLines: true,
+      complete: (results) => {
+        if(results.data.length > 0) results.data.shift(); // Remove headers
+        resolve(results.data);
+      },
+      error: (err) => reject(err)
+    });
+  });
+}
+
+async function initDashboard() {
+  const loading = document.getElementById('loading-overlay');
+  if(loading) loading.style.display = 'flex';
+  
+  try {
+    console.log("Starting data fetch from Google Sheets CSV...");
+    const results = await Promise.all([
+      fetchCSV(DATA_URLS.account),
+      fetchCSV(DATA_URLS.campaigns),
+      fetchCSV(DATA_URLS.adsets),
+      fetchCSV(DATA_URLS.ads),
+      fetchCSV(DATA_URLS.status),
+      fetchCSV(DATA_URLS.breakdown)
+    ]);
+    
+    RAW_DATA.account = results[0];
+    RAW_DATA.campaigns = results[1];
+    RAW_DATA.adsets = results[2];
+    RAW_DATA.ads = results[3];
+    RAW_DATA.status = results[4];
+    RAW_DATA.breakdown = results[5];
+    
+    console.log("All data fetched and parsed successfully.");
+    bootDashboard(); 
+  } catch (err) {
+    console.error("Fetch Error:", err);
+    alert("Không thể tải dữ liệu từ Google Sheets. Hãy kiểm tra lại kết nối mạng hoặc link CSV.");
+  }
+}
+
+
+// ─── COLUMN CONSTANTS ───────────────────────────────────────────
+// Campaign/Adset/Ad rows: [0]date,[2]camp,[5]spend,[6]adRev,[7]purch,[8]roas
+// [9]mcs,[10]costMcs,[11]ctrLink,[12]ctrAll,[13]aov,[14]metaPV
+// [17]cpm,[18]impr,[19]reach,[21]webPV,[22]webP,[23]metaP,[24]adRevFull,[26]cpa
+// Campaign extras: [27]cost2s,[28]u2s,[29]thruplay,[30]postEng
+// Adset extras:    [27]cost3s,[28]play2s,[29]cost2s,[30]u2s,[31]thruplay,[32]postEng,[33]adsetName,[34]adsetId
+// Ad extras:       [27]costMcs,[28]play3s,[29]play2s,[30]thruplay,[31]postEng,[32]adName,[33]adsetName,[34]adId
+
+// Breakdown: [0]date,[1]camp,[2]age,[3]gender,[4]impr,[5]linkClicks,[6]clicksAll,[7]spend,[8]purch,[9]adRev,[10]roas,[11]cpm,[12]ctrAll,[13]ctrLink,[14]postEng
+
+// ─── STATE ──────────────────────────────────────────────────────
+let FILT={}, SORT={}, FTIER='all', CURPAGE='overview', STATUS_MAP={};
+function getStatus(name){ return STATUS_MAP[name]||''; }
+function stBadge(name){
+  const s=getStatus(name);
+  if(s==='ACTIVE') return '<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;color:#0A875F"><span style="width:5px;height:5px;border-radius:50%;background:#0A875F;display:inline-block"></span>Active</span>';
+  if(s==='PAUSED') return '<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;color:#C96600"><span style="width:5px;height:5px;border-radius:50%;background:#C96600;display:inline-block"></span>Paused</span>';
+  return s?`<span style="font-size:10px;color:#A8ABCC">${s}</span>`:'<span style="font-size:10px;color:#A8ABCC">—</span>';
+}
+
+// ─── TIER ───────────────────────────────────────────────────────
+const TIER=n=>{const s=(n||'').toUpperCase();
+  if(s.includes('TOFU')) return 'TOFU';
+  if(s.includes('MOFU')||s.includes('BRANDING')) return 'MOFU';
+  if(s.includes('PURCHASE')||s.includes('MESS')||s.includes('MESSENGER')) return 'BOFU';
+  return 'OTHER';};
+const isBOFU=n=>TIER(n)==='BOFU';
+const isTOFU=n=>TIER(n)==='TOFU';
+const isMOFU=n=>TIER(n)==='MOFU';
+
+// ─── HELPERS ────────────────────────────────────────────────────
+const nn=v=>{try{return parseFloat(v)||0;}catch{return 0;}};
+const ii=v=>{try{return parseInt(v)||0;}catch{return 0;}};
+const fmt=d=>d.toISOString().split('T')[0];
+
+function fV(v){if(v>=1e9)return(v/1e9).toFixed(1)+'B';if(v>=1e6)return(v/1e6).toFixed(1)+'M';if(v>=1e3)return(v/1e3).toFixed(0)+'K';return Math.round(v).toLocaleString();}
+function fC(v){return v>0?fV(v)+'₫':'—';}
+function fR(v){return v>0?v.toFixed(2)+'x':'—';}
+function fP(v){return v>0?(v*100>=1?v.toFixed(2):v.toFixed(3))+'%':'—';}
+function fI(v){return ii(v).toLocaleString('vi-VN');}
+
+function rbadge(v){
+  if(!v)return'<span class="rb n">—</span>';
+  if(v>=3)return`<span class="rb g">${fR(v)}</span>`;
+  if(v>=2)return`<span class="rb w">${fR(v)}</span>`;
+  return`<span class="rb r">${fR(v)}</span>`;}
+function tierBadge(t){return`<span class="fb-badge ${(t||'other').toLowerCase()}">${t||'—'}</span>`;}
+function ibf(v,m,c){const p=m>0?Math.min(v/m*100,100):0;return`<div class="ib"><div class="ib-bg"><div class="ib-fill" style="width:${p}%;background:${c}"></div></div></div>`;}
+
+// ─── AGGREGATE ──────────────────────────────────────────────────
+function agg(rows,adRevCol=6,spendCol=5,purchCol=7,imprCol=18,reachCol=19,mcsCol=9,thruCol=29,engCol=30,cpmCol=17,ctrACol=12,ctrLCol=11,linkC=null){
+  let spend=0,adRev=0,purch=0,impr=0,reach=0,mcs=0,thruplay=0,postEng=0,linkClicks=0;
+  let ctrW=0,cpmW=0,ctrLW=0;
+  rows.forEach(r=>{
+    const s=nn(r[spendCol]),im=ii(r[imprCol]);
+    spend+=s; adRev+=nn(r[adRevCol]); purch+=nn(r[purchCol]);
+    impr+=im; reach+=ii(r[reachCol]||0); mcs+=nn(r[mcsCol]||0);
+    thruplay+=nn(r[thruCol]||0); postEng+=nn(r[engCol]||0);
+    if(linkC!==null) linkClicks+=ii(r[linkC]||0);
+    ctrW+=nn(r[ctrACol])*im; cpmW+=nn(r[cpmCol])*s; ctrLW+=nn(r[ctrLCol]||0)*im;
+  });
+  const roas=spend>0&&adRev>0?adRev/spend:0;
+  return{spend,adRev,purch,impr,reach,mcs,thruplay,postEng,linkClicks,roas,
+    cpa:purch>0?spend/purch:0, aov:purch>0?adRev/purch:0,
+    cpm:spend>0?cpmW/spend:0, ctrAll:impr>0?ctrW/impr:0, ctrLink:impr>0?ctrLW/impr:0};
+}
+function aggBk(rows){
+  let spend=0,adRev=0,purch=0,impr=0,lc=0,ca=0,eng=0;
+  let ctrW=0,cpmW=0,ctrLW=0;
+  rows.forEach(r=>{
+    const s=nn(r[7]),im=ii(r[4]);
+    spend+=s;adRev+=nn(r[9]);purch+=nn(r[8]);impr+=im;lc+=ii(r[5]);ca+=ii(r[6]);eng+=nn(r[14]);
+    ctrW+=nn(r[12])*im;cpmW+=nn(r[11])*s;ctrLW+=nn(r[13])*im;
+  });
+  return{spend,adRev,purch,impr,lc,ca,eng,
+    roas:spend>0&&adRev>0?adRev/spend:0,
+    cpa:purch>0?spend/purch:0,
+    cpm:spend>0?cpmW/spend:0,ctrAll:impr>0?ctrW/impr:0,ctrLink:impr>0?ctrLW/impr:0};
+}
+function grp(rows,kfn){return rows.reduce((m,r)=>{const k=kfn(r);(m[k]=m[k]||[]).push(r);return m;},{});}
+
+// ─── DATES ──────────────────────────────────────────────────────
+function setDates(f,t){g('dtFrom').value=f;g('dtTo').value=t;}
+function setP(el,d){qq('.chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');
+  const t=new Date(),f=new Date(t);
+  if(d==='ytd'){f.setMonth(0);f.setDate(1);}else f.setDate(f.getDate()-d);
+  setDates(fmt(f),fmt(t));applyFilter();}
+
+function applyFilter(){
+  const from=g('dtFrom').value,to=g('dtTo').value;
+  const inR=r=>{const d=String(r[0]).slice(0,10);return(!from||d>=from)&&(!to||d<=to);};
+  FILT={
+    camp: (RAW_DATA.campaigns||[]).filter(inR),
+    adset:(RAW_DATA.adsets||[]).filter(inR),
+    ad:   (RAW_DATA.ads||[]).filter(inR),
+    bk:   RAW_DATA.breakdown||[],
+  };
+  renderAll();
+}
+
+// ─── FUNNEL FILTER ───────────────────────────────────────────────
+let FSTATUS='all';
+function setStatus(s,el){
+  FSTATUS=s;
+  document.querySelectorAll('#stTabs .ftab').forEach(b=>b.className='ftab');
+  el.classList.add('on-all');
+  if(s==='active') el.style.cssText='color:#0A875F;background:#E4F5EE;border-color:#0A875F';
+  else if(s==='paused') el.style.cssText='color:#C96600;background:#FEF0DC;border-color:#C96600';
+  renderPage(CURPAGE);
+}
+function setFunnel(t,el){
+  FTIER=t;
+  qq('.ftab').forEach(b=>b.className='ftab');
+  el.classList.add('on-'+t);
+  renderPage(CURPAGE);
+}
+
+function filtByTier(rows,campCol=2){
+  let out=rows;
+  if(FTIER!=='all') out=out.filter(r=>{
+    if(FTIER==='bofu') return isBOFU(r[campCol]);
+    if(FTIER==='tofu') return isTOFU(r[campCol]);
+    if(FTIER==='mofu') return isMOFU(r[campCol])||TIER(r[campCol])==='OTHER';
+    return true;});
+  if(FSTATUS!=='all') out=out.filter(r=>{
+    const s=(getStatus(r[campCol])||'').toUpperCase();
+    if(FSTATUS==='active') return s==='ACTIVE';
+    if(FSTATUS==='paused') return s==='PAUSED';
+    return true;});
+  return out;
+}
+
+// ─── CHARTS ─────────────────────────────────────────────────────
+const CHARTS={};
+function dc(k){if(CHARTS[k]){CHARTS[k].destroy();delete CHARTS[k];}}
+function co(o={}){
+  return{responsive:true,maintainAspectRatio:false,
+    plugins:{
+      legend:{display:!!o.leg,labels:{color:'#3A3E60',font:{size:10,family:'DM Sans'},boxWidth:10,padding:10}},
+      datalabels:{display:false},
+      tooltip:{backgroundColor:'#fff',borderColor:'#E2E5F0',borderWidth:1,
+        titleColor:'#0D0F1E',bodyColor:'#3A3E60',padding:10,
+        titleFont:{family:'DM Sans',size:12,weight:'700'}}},
+    scales:{
+      x:{grid:{color:'rgba(0,0,30,.04)'},ticks:{color:'#676B92',maxRotation:45,font:{size:10}}},
+      y:{grid:{color:'rgba(0,0,30,.04)'},ticks:{color:'#676B92',font:{size:10}},
+        title:o.yL?{display:true,text:o.yL,color:'#676B92',font:{size:10}}:{}},
+      ...(o.y2?{y1:{position:'right',grid:{drawOnChartArea:false},ticks:{color:'#676B92',font:{size:10}},
+        title:o.y2L?{display:true,text:o.y2L,color:'#676B92',font:{size:10}}:{}}}:{})
+    }};
+}
+function pieOpts(total){return{responsive:true,maintainAspectRatio:false,cutout:'52%',
+  plugins:{legend:{position:'bottom',labels:{font:{size:10,family:'DM Sans'},color:'#3A3E60',padding:8,boxWidth:10}},
+    datalabels:{color:'#0D0F1E',font:{size:10,weight:'700',family:'DM Mono'},
+      formatter:(v,ctx)=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);const p=v/t*100;return p>3?p.toFixed(0)+'%':'';}},
+    tooltip:{backgroundColor:'#fff',borderColor:'#E2E5F0',borderWidth:1,padding:10,
+      callbacks:{label:c=>' '+c.label+': '+fC(c.raw)}}}};}
+
+// ─── RENDER ALL ──────────────────────────────────────────────────
+function renderAll(){renderPage(CURPAGE);}
+
+function renderPage(pg){
+  switch(pg){
+    case 'overview':  renderOverview(); break;
+    case 'awareness': renderAwareness(); break;
+    case 'creatives': renderCreatives(); break;
+    case 'campaigns': renderCampaigns(); break;
+    case 'adsets':    renderAdsets(); break;
+    case 'audience':  renderAudience(); break;
+  }
+}
+
+// ─── OVERVIEW ───────────────────────────────────────────────────
+function renderOverview(){
+  const rows=FILT.camp||[];
+  const tofu=rows.filter(r=>isTOFU(r[2]));
+  const mofu=rows.filter(r=>isMOFU(r[2]));
+  const bofu=rows.filter(r=>isBOFU(r[2]));
+  const all =rows;
+  const aA=agg(all),aT=agg(tofu),aM=agg(mofu,6,5,7,18,19,9,29,30,17,12,11,null),aB=agg(bofu);
+
+  // KPI
+  g('ovKg').innerHTML=[
+    {l:'AD Revenue (BOFU)',v:fC(aB.adRev),cl:'green'},
+    {l:'Purchase ROAS',v:fR(aB.roas),cl:'blue'},
+    {l:'Amount spent',v:fC(aA.spend)},
+    {l:'Purchases',v:fI(aB.purch)},
+    {l:'Cost per purchase',v:fC(aB.cpa),cl:'orange'},
+    {l:'CPM (avg all)',v:fC(aA.cpm)},
+    {l:'CTR (all, avg)',v:fP(aA.ctrAll)},
+    {l:'Post engagement',v:fI(aA.postEng)},
+  ].map(k=>`<div class="kc"><div class="kc-l">${k.l}</div><div class="kc-v ${k.cl||''}">${k.v}</div></div>`).join('');
+
+  // Funnel visual
+  const ts=aA.spend||1;
+  g('funnelOuter').innerHTML=`
+  <div class="funnel-vis">
+    <div class="fb fb-tofu">
+      <div class="fb-lbl">TOFU — Awareness</div>
+      <div class="fb-val">${fI(aT.impr)}</div>
+      <div class="fb-sub">Impressions · ${(aT.spend/ts*100).toFixed(0)}% spend</div>
+    </div>
+    <div class="fa">↓</div>
+    <div class="fb fb-mofu">
+      <div class="fb-lbl">MOFU — Consideration</div>
+      <div class="fb-val">${fI(aM.postEng)}</div>
+      <div class="fb-sub">Post engagement · ${(aM.spend/ts*100).toFixed(0)}% spend</div>
+    </div>
+    <div class="fa">↓</div>
+    <div class="fb fb-bofu">
+      <div class="fb-lbl">BOFU — Purchase</div>
+      <div class="fb-val">${fI(aB.purch)} orders</div>
+      <div class="fb-sub">${fR(aB.roas)} ROAS · ${(aB.spend/ts*100).toFixed(0)}% spend</div>
+    </div>
+  </div>
+  <div class="fmet">
+    <div class="fmg"><div class="fmg-t t">TOFU — Reach & Awareness</div>
+      <div class="fmg-grid">
+        <div class="fmi"><div class="fmi-l">Impressions</div><div class="fmi-v">${fI(aT.impr)}</div></div>
+        <div class="fmi"><div class="fmi-l">Reach</div><div class="fmi-v">${fI(aT.reach)}</div></div>
+        <div class="fmi"><div class="fmi-l">CPM</div><div class="fmi-v">${fC(aT.cpm)}</div></div>
+        <div class="fmi"><div class="fmi-l">CTR (all)</div><div class="fmi-v">${fP(aT.ctrAll)}</div></div>
+        <div class="fmi"><div class="fmi-l">ThruPlays</div><div class="fmi-v">${fI(aT.thruplay)}</div></div>
+        <div class="fmi"><div class="fmi-l">Amt spent</div><div class="fmi-v">${fC(aT.spend)}</div></div>
+      </div>
+    </div>
+    <div class="fmg"><div class="fmg-t m">MOFU — Consideration</div>
+      <div class="fmg-grid">
+        <div class="fmi"><div class="fmi-l">Post engagement</div><div class="fmi-v">${fI(aM.postEng)}</div></div>
+        <div class="fmi"><div class="fmi-l">MCS</div><div class="fmi-v">${fI(aM.mcs)}</div></div>
+        <div class="fmi"><div class="fmi-l">CTR (all)</div><div class="fmi-v">${fP(aM.ctrAll)}</div></div>
+        <div class="fmi"><div class="fmi-l">CPM</div><div class="fmi-v">${fC(aM.cpm)}</div></div>
+        <div class="fmi"><div class="fmi-l">ThruPlays</div><div class="fmi-v">${fI(aM.thruplay)}</div></div>
+        <div class="fmi"><div class="fmi-l">Amt spent</div><div class="fmi-v">${fC(aM.spend)}</div></div>
+      </div>
+    </div>
+    <div class="fmg"><div class="fmg-t b">BOFU — Purchase</div>
+      <div class="fmg-grid">
+        <div class="fmi"><div class="fmi-l">AD Revenue</div><div class="fmi-v">${fC(aB.adRev)}</div></div>
+        <div class="fmi"><div class="fmi-l">Purchase ROAS</div><div class="fmi-v">${fR(aB.roas)}</div></div>
+        <div class="fmi"><div class="fmi-l">Purchases</div><div class="fmi-v">${fI(aB.purch)}</div></div>
+        <div class="fmi"><div class="fmi-l">CPA</div><div class="fmi-v">${fC(aB.cpa)}</div></div>
+        <div class="fmi"><div class="fmi-l">AOV</div><div class="fmi-v">${fC(aB.aov)}</div></div>
+        <div class="fmi"><div class="fmi-l">Amt spent</div><div class="fmi-v">${fC(aB.spend)}</div></div>
+      </div>
+    </div>
+  </div>`;
+
+  // Budget pie
+  const tiers=[{l:'TOFU',v:aT.spend,c:'#BFCAFF'},{l:'MOFU',v:aM.spend,c:'#C4B5FD'},{l:'BOFU',v:aB.spend,c:'#6EE7C7'}];
+  const other=ts-aT.spend-aM.spend-aB.spend;
+  if(other>0) tiers.push({l:'Other',v:other,c:'#E2E5F0'});
+  const tFilt=tiers.filter(t=>t.v>0);
+  dc('c-pie'); CHARTS['c-pie']=new Chart(g('c-pie'),{type:'doughnut',data:{
+    labels:tFilt.map(t=>t.l),
+    datasets:[{data:tFilt.map(t=>t.v),backgroundColor:tFilt.map(t=>t.c),borderWidth:2,borderColor:'#fff',hoverOffset:5}]
+  },options:pieOpts(ts)});
+
+  // Rev vs Spend daily
+  const bB=grp(bofu,r=>String(r[0]).slice(0,10)),dB=Object.keys(bB).sort();
+  dc('c-revsp'); CHARTS['c-revsp']=new Chart(g('c-revsp'),{type:'line',data:{labels:dB.map(d=>d.slice(5)),datasets:[
+    {label:'AD Revenue',data:dB.map(d=>agg(bB[d]).adRev/1e6),borderColor:'#0A875F',backgroundColor:'rgba(10,135,95,.07)',fill:true,borderWidth:2,tension:.45,pointRadius:2},
+    {label:'Amount spent',data:dB.map(d=>agg(bB[d]).spend/1e6),borderColor:'#2D3AE8',backgroundColor:'rgba(45,58,232,.05)',fill:true,borderWidth:2,tension:.45,pointRadius:2}
+  ]},options:co({leg:true,yL:'M₫'})});
+
+  // ROAS
+  const roasD=dB.map(d=>agg(bB[d]).roas);
+  dc('c-roas'); CHARTS['c-roas']=new Chart(g('c-roas'),{type:'line',data:{labels:dB.map(d=>d.slice(5)),datasets:[
+    {label:'ROAS',data:roasD,borderColor:'#2D3AE8',backgroundColor:'rgba(45,58,232,.05)',fill:true,borderWidth:2.5,tension:.45,
+     pointBackgroundColor:roasD.map(v=>v>=3?'#0A875F':v>=2?'#C96600':'#C42626'),pointRadius:3.5}
+  ]},options:co({yL:'ROAS'})});
+
+  // CPM + CTR
+  const bA=grp(all,r=>String(r[0]).slice(0,10)),dA=Object.keys(bA).sort();
+  dc('c-cpmctr'); CHARTS['c-cpmctr']=new Chart(g('c-cpmctr'),{data:{labels:dA.map(d=>d.slice(5)),datasets:[
+    {type:'line',label:'CPM (K₫)',data:dA.map(d=>agg(bA[d]).cpm/1000),borderColor:'#C96600',borderWidth:2,tension:.45,fill:false,pointRadius:2,yAxisID:'y'},
+    {type:'line',label:'CTR (all) %',data:dA.map(d=>agg(bA[d]).ctrAll*100),borderColor:'#2D3AE8',borderWidth:2,tension:.45,fill:false,pointRadius:2,yAxisID:'y1'}
+  ]},options:co({leg:true,y2:true,yL:'CPM K₫',y2L:'CTR %'})});
+}
+
+// ─── AWARENESS ──────────────────────────────────────────────────
+function renderAwareness(){
+  const rows=FILT.camp||[];
+  const tofu=rows.filter(r=>isTOFU(r[2]));
+  const mofu=rows.filter(r=>isMOFU(r[2]));
+  const aT=agg(tofu),aM=agg(mofu);
+  g('awKg').innerHTML=[
+    {l:'TOFU Impressions',v:fI(aT.impr),cl:'blue'},{l:'TOFU Reach',v:fI(aT.reach)},
+    {l:'TOFU CPM',v:fC(aT.cpm)},{l:'TOFU ThruPlays',v:fI(aT.thruplay)},
+    {l:'MOFU Post engagement',v:fI(aM.postEng),cl:'blue'},{l:'MOFU Link clicks',v:fI(aM.linkClicks||0)},
+    {l:'MOFU CTR (all)',v:fP(aM.ctrAll)},{l:'MOFU MCS',v:fI(aM.mcs)},
+  ].map(k=>`<div class="kc"><div class="kc-l">${k.l}</div><div class="kc-v ${k.cl||''}">${k.v}</div></div>`).join('');
+
+  const bT=grp(tofu,r=>String(r[0]).slice(0,10)),dT=Object.keys(bT).sort();
+  const bM=grp(mofu,r=>String(r[0]).slice(0,10)),dM=Object.keys(bM).sort();
+  dc('c-aw1'); CHARTS['c-aw1']=new Chart(g('c-aw1'),{type:'line',data:{labels:dT.map(d=>d.slice(5)),datasets:[
+    {label:'Impr (K)',data:dT.map(d=>agg(bT[d]).impr/1000),borderColor:'#2D3AE8',backgroundColor:'rgba(45,58,232,.07)',fill:true,borderWidth:2,tension:.45,pointRadius:2,yAxisID:'y'},
+    {label:'Reach (K)',data:dT.map(d=>agg(bT[d]).reach/1000),borderColor:'#6B2FD4',fill:false,borderWidth:2,tension:.45,pointRadius:2,yAxisID:'y1'}
+  ]},options:co({leg:true,y2:true,yL:'Impr K',y2L:'Reach K'})});
+  dc('c-aw2'); CHARTS['c-aw2']=new Chart(g('c-aw2'),{data:{labels:dT.map(d=>d.slice(5)),datasets:[
+    {type:'line',label:'CPM K₫',data:dT.map(d=>agg(bT[d]).cpm/1000),borderColor:'#C96600',borderWidth:2,tension:.45,fill:false,pointRadius:2,yAxisID:'y'},
+    {type:'bar',label:'ThruPlays',data:dT.map(d=>agg(bT[d]).thruplay),backgroundColor:'rgba(45,58,232,.15)',yAxisID:'y1',borderRadius:2}
+  ]},options:co({leg:true,y2:true,yL:'CPM K₫',y2L:'ThruPlays'})});
+  const useM=dM.length>0;
+  const labM=useM?dM.map(d=>d.slice(5)):['No MOFU data'];
+  dc('c-mo1'); CHARTS['c-mo1']=new Chart(g('c-mo1'),{data:{labels:labM,datasets:[
+    {type:'bar',label:'Link clicks',data:useM?dM.map(d=>ii(agg(bM[d]).linkClicks||0)):[]  ,backgroundColor:'rgba(107,47,212,.2)',yAxisID:'y',borderRadius:2},
+    {type:'line',label:'MCS',data:useM?dM.map(d=>agg(bM[d]).mcs):[],borderColor:'#6B2FD4',borderWidth:2,tension:.45,fill:false,pointRadius:3,yAxisID:'y1'}
+  ]},options:co({leg:true,y2:true,yL:'Link clicks',y2L:'MCS'})});
+  dc('c-mo2'); CHARTS['c-mo2']=new Chart(g('c-mo2'),{data:{labels:labM,datasets:[
+    {type:'bar',label:'Post engagement',data:useM?dM.map(d=>agg(bM[d]).postEng):[],backgroundColor:'rgba(107,47,212,.15)',yAxisID:'y',borderRadius:2},
+    {type:'line',label:'CTR (all) %',data:useM?dM.map(d=>agg(bM[d]).ctrAll*100):[],borderColor:'#C96600',borderWidth:2,tension:.45,fill:false,pointRadius:3,yAxisID:'y1'}
+  ]},options:co({leg:true,y2:true,yL:'Post eng.',y2L:'CTR %'})});
+}
+
+// ─── CREATIVES ──────────────────────────────────────────────────
+function renderCreatives(){
+  const rawAds=FILT.ad||[];
+  const ads=filtByTier(rawAds);
+
+  // Aggregate by ad name
+  const byAd=grp(ads,r=>r[32]||'?');
+  const adAgg=Object.entries(byAd).map(([name,rows])=>{
+    const sp=rows.reduce((s,r)=>s+nn(r[5]),0);
+    const rv=rows.reduce((s,r)=>s+nn(r[6]),0);
+    const pu=rows.reduce((s,r)=>s+nn(r[7]),0);
+    const im=rows.reduce((s,r)=>s+ii(r[18]),0);
+    const tp=rows.reduce((s,r)=>s+nn(r[30]),0);
+    const pe=rows.reduce((s,r)=>s+nn(r[31]),0);
+    const ctrW=rows.reduce((s,r)=>s+nn(r[12])*ii(r[18]),0);
+    const cpmW=rows.reduce((s,r)=>s+nn(r[17])*nn(r[5]),0);
+    return{name,camp:rows[0][2]||'',sp,rv,pu,im,tp,pe,
+      roas:sp>0&&rv>0?rv/sp:0, cpa:pu>0?sp/pu:0, aov:pu>0?rv/pu:0,
+      ctrAll:im>0?ctrW/im:0, cpm:sp>0?cpmW/sp:0};
+  }).sort((a,b)=>b.rv-a.rv);
+
+  const bofuAds=adAgg.filter(a=>isBOFU(a.camp));
+  g('crKg').innerHTML=[
+    {l:'Active Ads',v:String(adAgg.length),cl:'blue'},
+    {l:'Best ROAS',v:fR(Math.max(...bofuAds.map(a=>a.roas),0))},
+    {l:'AD Revenue (BOFU)',v:fC(bofuAds.reduce((s,a)=>s+a.rv,0)),cl:'green'},
+    {l:'Purchases (BOFU)',v:fI(bofuAds.reduce((s,a)=>s+a.pu,0))},
+  ].map(k=>`<div class="kc"><div class="kc-l">${k.l}</div><div class="kc-v ${k.cl||''}">${k.v}</div></div>`).join('');
+
+  g('crMeta').textContent=adAgg.length+' ads';
+
+  const top20=bofuAds.slice(0,20);
+  dc('c-cr-rev'); CHARTS['c-cr-rev']=new Chart(g('c-cr-rev'),{type:'bar',data:{
+    labels:top20.map(a=>a.name.length>28?a.name.slice(0,26)+'…':a.name),
+    datasets:[{label:'AD Revenue',data:top20.map(a=>a.rv/1e6),
+      backgroundColor:top20.map(a=>a.roas>=3?'rgba(10,135,95,.65)':a.roas>=2?'rgba(201,102,0,.65)':'rgba(196,38,38,.65)'),borderRadius:3}]
+  },options:{...co({yL:'M₫',datalabels:false}),indexAxis:'y',
+    plugins:{...co({}).plugins,
+      datalabels:{display:false},
+      legend:{display:false}}}});
+
+  const maxS=Math.max(...adAgg.map(a=>a.sp),1);
+  g('crTbBody').innerHTML=adAgg.slice(0,200).map(a=>{
+    const isB=isBOFU(a.camp);
+    return`<tr>
+      <td class="txt" title="${a.name}">${a.name.slice(0,36)}</td>
+      <td class="txt" style="max-width:160px">${a.camp.slice(0,30)}</td>
+      <td>${stBadge(a.camp)}</td>
+      <td>${fC(a.sp)}${ibf(a.sp,maxS,'#2D3AE8')}</td>
+      <td>${isB?fC(a.rv):'—'}</td>
+      <td>${isB?rbadge(a.roas):'<span class="rb n">N/A</span>'}</td>
+      <td>${isB?fI(a.pu):'—'}</td>
+      <td>${isB?fC(a.cpa):'—'}</td>
+      <td>${isB?fC(a.aov):'—'}</td>
+      <td>${fI(a.im)}</td>
+      <td>${fP(a.ctrAll)}</td>
+      <td>${fC(a.cpm)}</td>
+      <td>${fI(a.tp)}</td>
+      <td>${fI(a.pe)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── CAMPAIGNS ──────────────────────────────────────────────────
+function renderCampaigns(){
+  const rawRows=FILT.camp||[];
+  const rows=filtByTier(rawRows);
+  const byCamp=grp(rows,r=>r[2]||'?');
+  const camps=Object.entries(byCamp).map(([name,rs])=>({name,tier:TIER(name),...agg(rs)}))
+    .sort((a,b)=>b.spend-a.spend);
+  const totSp=rawRows.reduce((s,r)=>s+nn(r[5]),0)||1;
+
+  // Pre-calculate all BOFU aggregates before any usage
+  const bofuCamps=camps.filter(c=>c.tier==='BOFU');
+  const bofuSp=bofuCamps.reduce((s,c)=>s+c.spend,0);
+  const bofuRv=bofuCamps.reduce((s,c)=>s+c.adRev,0);
+  const bofuRoas=bofuSp>0?bofuRv/bofuSp:0;
+  const bofuPurch=bofuCamps.reduce((s,c)=>s+c.purch,0);
+  const bofu=[...bofuCamps].sort((a,b)=>b.roas-a.roas);
+
+  g('campMeta').textContent=camps.length+' campaigns';
+  g('campKg').innerHTML=[
+    {l:'AD Revenue (BOFU)',v:fC(bofuRv),cl:'green'},
+    {l:'ROAS (BOFU avg)',v:fR(bofuRoas)},
+    {l:'Amount spent',v:fC(camps.reduce((s,c)=>s+c.spend,0))},
+    {l:'Purchases (BOFU)',v:fI(bofuPurch)},
+  ].map(k=>`<div class="kc"><div class="kc-l">${k.l}</div><div class="kc-v ${k.cl||''}">${k.v}</div></div>`).join('');
+  dc('c-croas'); CHARTS['c-croas']=new Chart(g('c-croas'),{type:'bar',data:{
+    labels:bofu.map(c=>c.name.length>36?c.name.slice(0,34)+'…':c.name),
+    datasets:[{data:bofu.map(c=>c.roas),
+      backgroundColor:bofu.map(c=>c.roas>=3?'rgba(10,135,95,.7)':c.roas>=2?'rgba(201,102,0,.7)':'rgba(196,38,38,.7)'),borderRadius:3}]
+  },options:{...co({}),indexAxis:'y',plugins:{...co({}).plugins,datalabels:{display:false},legend:{display:false}}}});
+
+  const maxS=Math.max(...camps.map(c=>c.spend),1);
+  g('campTbBody').innerHTML=camps.map(c=>{
+    const isB=c.tier==='BOFU';
+    return`<tr>
+      <td class="txt" title="${c.name}">${c.name}</td>
+      <td>${stBadge(c.name)}</td>
+      <td>${tierBadge(c.tier)}</td>
+      <td>${fC(c.spend)}${ibf(c.spend,maxS,'#2D3AE8')}</td>
+      <td>${fI(c.impr)}</td>
+      <td>${fI(c.reach)}</td>
+      <td>${fP(c.ctrAll)}</td>
+      <td>${fI(c.postEng)}</td>
+      <td>${fI(c.thruplay)}</td>
+      <td>${fI(c.mcs)}</td>
+      <td>${isB?rbadge(c.roas):'<span class="rb n">N/A</span>'}</td>
+      <td>${isB?fC(c.adRev):'—'}</td>
+      <td>${isB?fI(c.purch):'—'}</td>
+      <td>${isB?fC(c.cpa):'—'}</td>
+      <td>${isB?fC(c.aov):'—'}</td>
+      <td>${fC(c.cpm)}</td>
+      <td><span style="font-size:10px;color:var(--ink3)">${(c.spend/totSp*100).toFixed(1)}%</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── ADSETS ─────────────────────────────────────────────────────
+function renderAdsets(){
+  const rawRows=FILT.adset||[];
+  const rows=filtByTier(rawRows);
+  // adset name is col[33]
+  const map={};rows.forEach(r=>{
+    const k=(r[2]||'')+'|||'+(r[33]||r[34]||'?');
+    if(!map[k]) map[k]={camp:r[2]||'',adset:r[33]||'',rows:[]};
+    map[k].rows.push(r);
+  });
+  const adsets=Object.values(map).map(v=>{
+    const a=agg(v.rows,6,5,7,18,19,9,31,32,17,12,11);
+    return{...v,...a};
+  }).sort((a,b)=>b.spend-a.spend);
+  g('adsetMeta').textContent=adsets.length+' ad sets';
+  const maxS=Math.max(...adsets.map(a=>a.spend),1);
+  g('adsetTbBody').innerHTML=adsets.map(a=>{
+    const isB=isBOFU(a.camp);
+    return`<tr>
+      <td class="txt">${a.camp.slice(0,28)}</td>
+      <td class="txt">${a.adset.slice(0,28)}</td>
+      <td>${stBadge(a.adset)}</td>
+      <td>${fC(a.spend)}${ibf(a.spend,maxS,'#2D3AE8')}</td>
+      <td>${fI(a.impr)}</td>
+      <td>${fP(a.ctrAll)}</td>
+      <td>${fI(a.postEng)}</td>
+      <td>${fI(a.thruplay)}</td>
+      <td>${isB?rbadge(a.roas):'<span class="rb n">N/A</span>'}</td>
+      <td>${isB?fC(a.adRev):'—'}</td>
+      <td>${isB?fI(a.purch):'—'}</td>
+      <td>${isB?fC(a.cpa):'—'}</td>
+      <td>${fC(a.cpm)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── AUDIENCE ───────────────────────────────────────────────────
+function renderAudience(){
+  const bk=FILT.bk||[];
+  g('audMeta').textContent=bk.length+' rows · last 60d · age×gender';
+  if(!bk.length){
+    ['audTbBody','c-age-impr','c-age-rev','c-age-eng','c-age-ctr','c-gen-rev'].forEach(id=>{
+      const el=g(id); if(el&&el.tagName==='TBODY') el.innerHTML='<tr><td colspan="13" style="text-align:center;padding:20px;color:var(--ink3)">No breakdown data</td></tr>';
+    }); return;
+  }
+
+  // Agg by age+gender
+  const byAG={};
+  bk.forEach(r=>{
+    const k=(r[2]||'?')+'|'+(r[3]||'?');
+    if(!byAG[k]) byAG[k]={age:r[2]||'?',gender:r[3]||'?',spend:0,adRev:0,purch:0,impr:0,lc:0,ca:0,eng:0,ctrW:0,cpmW:0,ctrLW:0};
+    const o=byAG[k],s=nn(r[7]),im=ii(r[4]);
+    o.spend+=s;o.adRev+=nn(r[9]);o.purch+=nn(r[8]);o.impr+=im;o.lc+=ii(r[5]);o.ca+=ii(r[6]);o.eng+=nn(r[14]);
+    o.ctrW+=nn(r[12])*im;o.cpmW+=nn(r[11])*s;o.ctrLW+=nn(r[13])*im;
+  });
+  const agRows=Object.values(byAG).map(o=>({...o,
+    roas:o.spend>0&&o.adRev>0?o.adRev/o.spend:0,
+    cpa:o.purch>0?o.spend/o.purch:0,
+    cpm:o.spend>0?o.cpmW/o.spend:0,
+    ctrAll:o.impr>0?o.ctrW/o.impr:0,
+    ctrLink:o.impr>0?o.ctrLW/o.impr:0,
+  })).sort((a,b)=>b.spend-a.spend);
+
+  // KPI
+  const topAge=[...Object.entries(grp(agRows,r=>r.age))].map(([a,rs])=>({a,impr:rs.reduce((s,r)=>s+r.impr,0)})).sort((a,b)=>b.impr-a.impr);
+  g('audKg').innerHTML=[
+    {l:'Top Age (Impressions)',v:topAge[0]?.a||'—',cl:'blue'},
+    {l:'Impressions total',v:fI(agRows.reduce((s,r)=>s+r.impr,0))},
+    {l:'AD Revenue (BOFU)',v:fC(agRows.reduce((s,r)=>s+r.adRev,0)),cl:'green'},
+    {l:'Post engagement',v:fI(agRows.reduce((s,r)=>s+r.eng,0))},
+  ].map(k=>`<div class="kc"><div class="kc-l">${k.l}</div><div class="kc-v ${k.cl||''}">${k.v}</div></div>`).join('');
+
+  const byAge=grp(agRows,r=>r.age);
+  const ages=Object.keys(byAge).sort();
+  const GCOL={'male':'#2D3AE8','female':'#C42626','unknown':'#A8ABCC'};
+  const genders=[...new Set(agRows.map(r=>r.gender))].filter(Boolean);
+
+  // Impressions by age
+  dc('c-age-impr'); CHARTS['c-age-impr']=new Chart(g('c-age-impr'),{type:'bar',data:{
+    labels:ages,
+    datasets:[{data:ages.map(a=>byAge[a].reduce((s,r)=>s+r.impr,0)/1000),
+      backgroundColor:'rgba(45,58,232,.55)',borderRadius:3}]
+  },options:{...co({yL:'Impr (K)'}),plugins:{...co({}).plugins,datalabels:{display:false},legend:{display:false}}}});
+
+  // AD Revenue by age (BOFU only)
+  const bkBofu=bk.filter(r=>isBOFU(r[1]||''));
+  const byAge2={};
+  bkBofu.forEach(r=>{const k=r[2]||'?';if(!byAge2[k]) byAge2[k]=0;byAge2[k]+=nn(r[9]);});
+  dc('c-age-rev'); CHARTS['c-age-rev']=new Chart(g('c-age-rev'),{type:'bar',data:{
+    labels:ages,
+    datasets:[{data:ages.map(a=>(byAge2[a]||0)/1e6),
+      backgroundColor:'rgba(10,135,95,.55)',borderRadius:3}]
+  },options:{...co({yL:'Rev (M₫)'}),plugins:{...co({}).plugins,datalabels:{display:false},legend:{display:false}}}});
+
+  // CTR by age × gender (grouped) - byAge has aggregated objects
+  // Need to re-group from raw bk for per-gender breakdown
+  const byAgeGender={};
+  bk.forEach(r=>{
+    const k=(r[2]||'?')+'|'+(r[3]||'?');
+    if(!byAgeGender[k]) byAgeGender[k]={age:r[2]||'?',gender:r[3]||'?',impr:0,ctrW:0};
+    const im=ii(r[4]);
+    byAgeGender[k].impr+=im;
+    byAgeGender[k].ctrW+=nn(r[12])*im;
+  });
+  dc('c-age-ctr'); CHARTS['c-age-ctr']=new Chart(g('c-age-ctr'),{type:'bar',data:{
+    labels:ages,
+    datasets:genders.map(gn=>({
+      label:gn,
+      data:ages.map(a=>{
+        const entry=byAgeGender[(a+'|'+gn)];
+        return entry&&entry.impr>0?entry.ctrW/entry.impr*100:0;
+      }),
+      backgroundColor:(GCOL[gn]||'#A8ABCC')+'99',borderRadius:2
+    }))
+  },options:{...co({leg:true,yL:'CTR (all) %'}),plugins:{...co({}).plugins,datalabels:{display:false}}}});
+
+  // Revenue by gender pie
+  const byGen=grp(agRows,r=>r.gender);
+  dc('c-gen-rev'); CHARTS['c-gen-rev']=new Chart(g('c-gen-rev'),{type:'doughnut',data:{
+    labels:Object.keys(byGen),
+    datasets:[{data:Object.values(byGen).map(rs=>rs.reduce((s,r)=>s+r.adRev,0)),
+      backgroundColor:Object.keys(byGen).map(k=>GCOL[k]||'#A8ABCC'),borderWidth:2,borderColor:'#fff',hoverOffset:5}]
+  },options:pieOpts(1)});
+
+  // Table
+  const maxS=Math.max(...agRows.map(r=>r.spend),1);
+  g('audTbBody').innerHTML=agRows.map(r=>`<tr>
+    <td class="txt">${r.age}</td>
+    <td>${r.gender}</td>
+    <td>${fC(r.spend)}${ibf(r.spend,maxS,'#2D3AE8')}</td>
+    <td>${fI(r.impr)}</td>
+    <td>${fI(r.lc)}</td>
+    <td>${fP(r.ctrAll)}</td>
+    <td>${fP(r.ctrLink)}</td>
+    <td>${fI(r.eng)}</td>
+    <td>${rbadge(r.roas)}</td>
+    <td>${fC(r.adRev)}</td>
+    <td>${fI(r.purch)}</td>
+    <td>${fC(r.cpa)}</td>
+    <td>${fC(r.cpm)}</td>
+  </tr>`).join('');
+}
+
+// ─── TABLE UTILS ─────────────────────────────────────────────────
+function srt(tid,col){
+  const tb=document.getElementById(tid),tbody=tb.querySelector('tbody');
+  const rows=Array.from(tbody.querySelectorAll('tr'));
+  const key=tid+'_'+col,asc=SORT[key]!==true;SORT[key]=asc;
+  tb.querySelectorAll('th').forEach((th,i)=>{th.classList.remove('asc','desc');if(i===col)th.classList.add(asc?'asc':'desc');});
+  rows.sort((a,b)=>{
+    const av=(a.cells[col]?.textContent||'').trim().replace(/[₫%x,↑↓BMKd\s]+/g,'');
+    const bv=(b.cells[col]?.textContent||'').trim().replace(/[₫%x,↑↓BMKd\s]+/g,'');
+    const an=parseFloat(av),bn=parseFloat(bv);
+    if(!isNaN(an)&&!isNaN(bn)) return asc?an-bn:bn-an;
+    return asc?av.localeCompare(bv,'vi'):bv.localeCompare(av,'vi');
+  });
+  rows.forEach(r=>tbody.appendChild(r));
+}
+function srchT(tid,col,q){
+  document.getElementById(tid).querySelector('tbody').querySelectorAll('tr').forEach(r=>{
+    r.style.display=(r.cells[col]?.textContent||'').toLowerCase().includes(q.toLowerCase())?'':'none';
+  });
+}
+
+// ─── NAV ────────────────────────────────────────────────────────
+const TITLES={overview:'Overview',awareness:'Awareness',creatives:'Ad Creatives',campaigns:'Campaigns',adsets:'Ad Sets',audience:'Audience Insights'};
+const FBAR_PAGES=['creatives','campaigns','adsets'];
+
+function nav(pg,el){
+  CURPAGE=pg;
+  qq('.sb-item').forEach(b=>b.classList.remove('on'));el.classList.add('on');
+  qq('.pane').forEach(p=>p.classList.remove('on'));
+  document.getElementById('pane-'+pg).classList.add('on');
+  g('pgTitle').textContent=TITLES[pg]||pg;
+  g('pgBadge').textContent=FTIER==='all'?'All':FTIER.toUpperCase();
+  g('fbar').style.display=FBAR_PAGES.includes(pg)?'flex':'none';
+  if(window.innerWidth<=800) closeSb();
+  renderPage(pg);
+}
+
+function toggleSb(){
+  const sb=g('sidebar');
+  sb.classList.toggle('open');
+  g('sbToggle').textContent=sb.classList.contains('open')?'✕':'☰';
+}
+function closeSb(){
+  g('sidebar').classList.remove('open');
+  g('sbToggle').textContent='☰';
+}
+
+function g(id){return document.getElementById(id);}
+function qq(s){return document.querySelectorAll(s);}
+
+// ─── BOOT ────────────────────────────────────────────────────────
+function bootDashboard() {
+  const to=fmt(new Date()),f=new Date();
+  f.setDate(f.getDate()-30);
+  g('dtFrom').value=fmt(f);
+  g('dtTo').value=to;
+  STATUS_MAP = RAW_DATA.statusMap||{};
+  g('sbSync').innerHTML='Updated:<br>'+(RAW_DATA.lastUpdated||'—')+'<br>'+(RAW_DATA.campaigns?.length||0)+' camp rows';
+  applyFilter();
+}
+document.addEventListener('DOMContentLoaded', initDashboard);
+</script>
+</body>
+</html>
